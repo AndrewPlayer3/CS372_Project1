@@ -1,0 +1,20 @@
+{
+  "name": "login",
+  "version": "1.0.0",
+  "description": "Basic login page project",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrewplayer3/CS372_Project1.git"
+  },
+  "author": "Andrew Player, Chuluunbat Purev",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/andrewplayer3/CS372_Project1/issues"
+  },
+  "homepage": "https://github.com/andrewplayer3/CS372_Project1#readme"
+}
