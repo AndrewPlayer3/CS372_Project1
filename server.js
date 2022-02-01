@@ -48,13 +48,13 @@ server.get('/', function(request, response) {
 /*/
  *  This accepts the post from the login for, and preforms the
  *  password check against the result from the mongodb.
- *  
+ *
  *  Responds:
  *  ---------
  *  {
- * 		"loginStatus" : boolean,		-- whether the user is logged in or not
- * 	    "incorrectAttempts" : integer,  -- how many times they failed logging in
- * 		"lockedOut" : boolean           -- whether the user's session is locked or not
+ *      "loginStatus" : boolean,        -- whether the user is logged in or not
+ *      "incorrectAttempts" : integer,  -- how many times they failed logging in
+ *      "lockedOut" : boolean           -- whether the user's session is locked or not
  *  }
 /*/
 server.post('/authenticate', function(request, response) {
@@ -132,7 +132,7 @@ server.post('/authenticate', function(request, response) {
  *  Responds:
  *  ---------
  *  {
- *  	"loginStatus" : boolen -- true if logged in, false if not.
+ *      "loginStatus" : boolen -- true if logged in, false if not.
  *  }
 /*/
 server.get('/authenticate', function(request, response) {
