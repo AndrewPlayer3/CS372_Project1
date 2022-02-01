@@ -2,13 +2,18 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 const path = require('path');
+/*
+ * If you get a TextEncoder not Defined Error, you need to copy this
+ * in the beginning of the file that gives the error:
+ * const {TextEncoder, TextDecoder} = require('util');	
+ */
 const {MongoClient} = require('mongodb');
 
 var server = express();
 
 
 server.use(session({
-	/*
+   /*
 	*  The user's session (cookie).
 	*/
 	secret: '123456',
@@ -20,7 +25,7 @@ server.use(express.json());
 
 
 server.get('/', function(request, response) {
-	/*
+   /*
 	*  Load the initial login page that has the form.
 	*/
 	response.sendFile(path.join(__dirname + '/login.html'));
@@ -28,7 +33,7 @@ server.get('/', function(request, response) {
 
 
 server.post('/authenticate', function(request, response) {
-	/*
+   /*
 	*  This accepts the post from the login for, and preforms the
 	*  password check against the result from the mongodb. If it 
 	*  is correct, the user gets redirected to /home, else they are
@@ -62,7 +67,7 @@ server.post('/authenticate', function(request, response) {
 
 
 server.get('/home', function(request, response) {
-	/*
+   /*
 	*  This is the user's home page: they should only get
 	*  here if they are logged in.
 	*/
