@@ -3,20 +3,60 @@
 <html>
     <head>
         <title>Cool Login Page</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     </head>
     <body>
-
         <h1>Login</h1>
         <div class="login-form">
-            <form action="authenticate" method="post">
-                <label for="username">Username: </label>
-                <input name="username" type="text" placeholder="Enter Username" required>
 
-                <label for="password">Password: </label>
-                <input name="password" type="password" placeholder="Enter Password" required>
+            <label for="username">Username: </label>
+            <input id="username" name="username" type="text" placeholder="Enter Username" required>
 
-                <button type="submit">Login</button>
-            </form>
+            <label for="password">Password: </label>
+            <input id="password" name="password" type="password" placeholder="Enter Password" required>
+
+            <button class="trigger" type="submit">Login</button>
+            <p class="badLoginWarning"></p>
+
+            <script name="login-check">
+                function changeDom(){
+                    username = document.getElementById("username").value;
+                    password = document.getElementById("password").value;
+                    console.log(username + " " + password);
+                    $.ajax({
+                        url: 'http://localhost:8080/authenticate',
+                        method:'POST',
+                        data: {"username" : username, "password" : password}
+                        }).done(function(data){
+                            loginStatus = data['loginStatus'];
+                            incorrectAttempts = data['incorrectAttempts'];
+                            lockedOut = data['lockedOut'];
+                            console.log(loginStatus + " " + incorrectAttempts + " " + lockedOut);
+                            if(loginStatus == false) {
+                                if(lockedOut) {
+                                    console.log("Locked");
+                                    $('p.badLoginWarning').replaceWith('<p class="badLoginWarning">You have been locked out.</p>');
+                                } else if(incorrectAttempts == 2) {
+                                    console.log("One More");
+                                    $('p.badLoginWarning').replaceWith('<p class="badLoginWarning">The username or password you entered is incorrect. You have 1 attempt remaining.</p>');
+                                } else {
+                                    console.log("Warned");
+                                    $('p.badLoginWarning').replaceWith('<p class="badLoginWarning">The username or password you entered is incorrect.</p>');
+                                }
+                            } else {
+                                window.location.href="/home";
+                            }
+                            console.log(data);
+                            return;
+                        }).fail(function(){
+                            console.log('BAD POST REQUEST!');
+                            return;
+                        });
+                    };
+                $('.trigger').click(function(){
+                    changeDom();
+                });
+           </script>
         </div>
     </body>
 </html>

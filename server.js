@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const html = require('html');
 const path = require('path');
 /*/
  * If you get a TextEncoder not Defined Error, you need to copy this
@@ -8,6 +9,7 @@ const path = require('path');
  * const {TextEncoder, TextDecoder} = require('util');	
 /*/
 const {MongoClient} = require('mongodb');
+const { render } = require('express/lib/response');
 
 /*/
  *  Database Information - Change this if yours is different doesn't match.
@@ -29,11 +31,10 @@ var server = express();
 server.use(session({
 	secret: '123456',
 	resave: true,
-	saveUninitialized: true
+	saveUninitialized: true,
 }));
 server.use(express.urlencoded({extended : true}));
 server.use(express.json());
-
 
 /*/
  *  Load the initial login page that has the form.
@@ -45,31 +46,63 @@ server.get('/', function(request, response) {
 
 /*/
  *  This accepts the post from the login for, and preforms the
- *  password check against the result from the mongodb. If it 
- *  is correct, the user gets redirected to /home, else they are
- *  told the username or password is incorrect.
+ *  password check against the result from the mongodb.
+ *  
+ *  Responds:
+ *  ---------
+ *  {
+ * 		"loginStatus" : boolean,		-- whether the user is logged in or not
+ * 	    "incorrectAttempts" : integer,  -- how many times they failed logging in
+ * 		"lockedOut" : boolean           -- whether the user's session is locked or not
+ *  }
 /*/
 server.post('/authenticate', function(request, response) {
+	
+	if(request.session.infoSet == null) {
+		request.session.infoSet = true;
+		request.session.incorrectLoginAttempts = 0;
+		request.session.loggedin = false;
+		request.session.lockedOut = false;
+	}
+
 	var username = request.body.username;
 	var password = request.body.password;
-	if (username && password) {
+
+	console.log("Recieved request for user: " + username);
+
+	if (username && password && !request.session.lockedOut) {
 		client.db(dbName).collection(dbCollection).find({'username' : username}).toArray(function(err, result) {
-			// User Format: {"username" : "user", "password" : "pwd"} 
+			
 			if (err) throw err;
+			
+			// result: [{"username" : "...", "password" : "..."}] //
 			bcrypt.compare(password, result[0]['password'], function(err, result) {
 				if (err) throw err;
 				if(result) {
 					request.session.user = username;
 					request.session.loggedin = true;
-					response.redirect('/home');
+					request.session.incorrectLoginAttempts = 0;
 				} else {
-					response.send('Incorrect Username or Password');
+					request.session.incorrectLoginAttempts = request.session.incorrectLoginAttempts + 1;
+					if(request.session.incorrectLoginAttempts == 3) {
+						request.session.lockedOut = true;
+					}
 				}
+				console.log("Session Details: " + request.session.loggedin + " " + request.session.incorrectLoginAttempts);
+				response.send({
+					"loginStatus" : request.session.loggedin,
+					"incorrectAttempts" : request.session.incorrectLoginAttempts,
+					"lockedOut" : request.session.lockedOut
+				});
+				response.end();
 			});
 		});
 	} else {
-		// User's should never get here from the login page.
-		response.send('Please enter Username and Password!');
+		response.send({
+			"loginStatus" : request.session.loggedin,
+			"incorrectAttempts" : request.session.incorrectLoginAttempts,
+			"lockedOut" : request.session.lockedOut
+		});
 		response.end();
 	}
 });
@@ -81,9 +114,9 @@ server.post('/authenticate', function(request, response) {
 /*/
 server.get('/home', function(request, response) {
 	if (request.session.loggedin) {
-		response.send('You are ' + request.session.user + ' and you have logged in.');
+		response.send('<h1>Hey there ' + request.session.user + ', you are now logged in. ✅</h1>');
 	} else {
-		response.send('Please login to view this page!');
+		response.send(403, '<h1>Please login to view this page! ⛔</h1>');
 	}
 	response.end();
 });
