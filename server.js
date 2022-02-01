@@ -51,6 +51,7 @@ server.post('/authenticate', function(request, response) {
 			bcrypt.compare(password, result[0]['password'], function(err, result) {
 				if (err) throw err;
 				if(result) {
+					request.session.user = username;
 					request.session.loggedin = true;
 					response.redirect('/home');
 				} else {
@@ -72,7 +73,7 @@ server.get('/home', function(request, response) {
 	*  here if they are logged in.
 	*/
 	if (request.session.loggedin) {
-		response.send('You have logged in...');
+		response.send('You are ' + request.session.user + ' and you have logged in.');
 	} else {
 		response.send('Please login to view this page!');
 	}
