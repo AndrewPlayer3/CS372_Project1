@@ -8,7 +8,7 @@ const path = require('path');
  *  ⛔ in the beginning of the file that gives the error:
  *  ⛔ const {TextEncoder, TextDecoder} = require('util');
 /*/
-const {MongoClient} = require('mongodb');
+const { MongoClient } = require('mongodb');
 const { render } = require('express/lib/response');
 
 /*/
@@ -29,19 +29,19 @@ var server = express();
  *  The user's session (cookie).
 /*/
 server.use(session({
-	secret: '123456',
-	resave: true,
-	saveUninitialized: true,
+    secret: '123456',
+    resave: true,
+    saveUninitialized: true,
 }));
-server.use(express.urlencoded({extended : true}));
+server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
 
 
 /*/
  *  Load the initial login page that has the form.
 /*/
-server.get('/', function(request, response) {
-	response.sendFile(path.join(__dirname + '/login.html'));
+server.get('/', function (request, response) {
+    response.sendFile(path.join(__dirname + '/login.html'));
 });
 
 
@@ -57,72 +57,72 @@ server.get('/', function(request, response) {
  *      "lockedOut"         : boolean   -- whether the user's session is locked or not
  *  }
 /*/
-server.post('/authenticate', function(request, response) {
-	
-	// Initialize session info for new sessions.
-	if(request.session.infoSet == null) {
-		request.session.infoSet = true;
-		request.session.incorrectLoginAttempts = 0;
-		request.session.loggedin = false;
-		request.session.lockedOut = false;
-	}
+server.post('/authenticate', function (request, response) {
 
-	var username = request.body.username;
-	var password = request.body.password;
+    // Initialize session info for new sessions.
+    if (request.session.infoSet == null) {
+        request.session.infoSet = true;
+        request.session.incorrectLoginAttempts = 0;
+        request.session.loggedin = false;
+        request.session.lockedOut = false;
+    }
 
-	console.log("Recieved request for user: " + username);
+    var username = request.body.username;
+    var password = request.body.password;
 
-	// Send 400 [Bad Request] if the uname or pwd is missing.
-	if (!username || !password) {
-		response.send(400);
-	}
+    console.log("Recieved request for user: " + username);
 
-	// If their session is locked out, don't waste the db's time.
-	if (username && password && !request.session.lockedOut) {
-		client.db(dbName).collection(dbCollection).find({'username' : username}).toArray(function(err_db, result) {
+    // Send 400 [Bad Request] if the uname or pwd is missing.
+    if (!username || !password) {
+        response.send(400);
+    }
 
-			if (err_db) throw err_db;
+    // If their session is locked out, don't waste the db's time.
+    if (username && password && !request.session.lockedOut) {
+        client.db(dbName).collection(dbCollection).find({ 'username': username }).toArray(function (err_db, result) {
 
-			// Hash check the inputed password against the one in the database.
-			bcrypt.compare(password, result[0]['password'], function(err_hash, result) {
+            if (err_db) throw err_db;
 
-				if (err_hash) throw err_hash;
+            // Hash check the inputed password against the one in the database.
+            bcrypt.compare(password, result[0]['password'], function (err_hash, result) {
 
-				if(result) { // If sucessful login								
-					request.session.user = username;
-					request.session.loggedin = true;
-					request.session.incorrectLoginAttempts = 0;
-				} else {     // If unsuccessful login
-					request.session.incorrectLoginAttempts = request.session.incorrectLoginAttempts + 1;
-					if(request.session.incorrectLoginAttempts == 3) {
-						request.session.lockedOut = true;
-					}
-				}
+                if (err_hash) throw err_hash;
 
-				console.log(
-					"Session Details: " +
-					request.session.loggedin + " " + 
-					request.session.incorrectLoginAttempts
-					);
+                if (result) { // If sucessful login								
+                    request.session.user = username;
+                    request.session.loggedin = true;
+                    request.session.incorrectLoginAttempts = 0;
+                } else {     // If unsuccessful login
+                    request.session.incorrectLoginAttempts = request.session.incorrectLoginAttempts + 1;
+                    if (request.session.incorrectLoginAttempts == 3) {
+                        request.session.lockedOut = true;
+                    }
+                }
 
-				// Send the results
-				response.send({
-					"loginStatus" : request.session.loggedin,
-					"incorrectAttempts" : request.session.incorrectLoginAttempts,
-					"lockedOut" : request.session.lockedOut
-				});
-				response.end();
-			});
-		});
-	} else {
-		// If no username or password was entered, send status code 400 (Bad Request).
-		response.send({
-			"loginStatus" : request.session.loggedin,
-			"incorrectAttempts" : request.session.incorrectLoginAttempts,
-			"lockedOut" : request.session.lockedOut
-		});
-		response.end();
-	}
+                console.log(
+                    "Session Details: " +
+                    request.session.loggedin + " " +
+                    request.session.incorrectLoginAttempts
+                );
+
+                // Send the results
+                response.send({
+                    "loginStatus": request.session.loggedin,
+                    "incorrectAttempts": request.session.incorrectLoginAttempts,
+                    "lockedOut": request.session.lockedOut
+                });
+                response.end();
+            });
+        });
+    } else {
+        // If no username or password was entered, send status code 400 (Bad Request).
+        response.send({
+            "loginStatus": request.session.loggedin,
+            "incorrectAttempts": request.session.incorrectLoginAttempts,
+            "lockedOut": request.session.lockedOut
+        });
+        response.end();
+    }
 });
 
 
@@ -135,14 +135,14 @@ server.post('/authenticate', function(request, response) {
  *      "loginStatus" : boolen -- whether the user is logged in or not
  *  }
 /*/
-server.get('/authenticate', function(request, response) {
-	if (request.session.loggedin) {
-		console.log(request.session.user + " has been auto-redirected.");
-		response.send({"loginStatus" : true});
-	} else {
-		response.send({"loginStatus" : false});
-	}
-	response.end();
+server.get('/authenticate', function (request, response) {
+    if (request.session.loggedin) {
+        console.log(request.session.user + " has been auto-redirected.");
+        response.send({ "loginStatus": true });
+    } else {
+        response.send({ "loginStatus": false });
+    }
+    response.end();
 });
 
 
@@ -150,13 +150,13 @@ server.get('/authenticate', function(request, response) {
  *  This is the user's home page: they should only get
  *  here if they are logged in.
 /*/
-server.get('/home', function(request, response) {
-	if (request.session.loggedin) {
-		response.send('<h1>Hey there ' + request.session.user + ', you are now logged in. ✅</h1>');
-	} else {
-		response.redirect('http://localhost:8080/');
-	}
-	response.end();
+server.get('/home', function (request, response) {
+    if (request.session.loggedin) {
+        response.send('<h1>Hey there ' + request.session.user + ', you are now logged in. ✅</h1>');
+    } else {
+        response.redirect('http://localhost:8080/');
+    }
+    response.end();
 });
 
 
