@@ -16,5 +16,13 @@
   "bugs": {
     "url": "https://github.com/andrewplayer3/CS372_Project1/issues"
   },
-  "homepage": "https://github.com/andrewplayer3/CS372_Project1#readme"
+  "homepage": "https://github.com/andrewplayer3/CS372_Project1#readme",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "express": "^4.17.2",
+    "express-session": "^1.17.2",
+    "mongodb": "^4.3.1",
+    "path": "^0.12.7",
+    "util": "^0.12.4"
+  }
 }
