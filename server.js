@@ -59,6 +59,7 @@ server.get('/', function(request, response) {
 /*/
 server.post('/authenticate', function(request, response) {
 	
+	// Initialize session info for new sessions.
 	if(request.session.infoSet == null) {
 		request.session.infoSet = true;
 		request.session.incorrectLoginAttempts = 0;
@@ -71,25 +72,40 @@ server.post('/authenticate', function(request, response) {
 
 	console.log("Recieved request for user: " + username);
 
-	if (username && password && !request.session.lockedOut) {
-		client.db(dbName).collection(dbCollection).find({'username' : username}).toArray(function(err, result) {
+	// Send 400 [Bad Request] if the uname or pwd is missing.
+	if (!username || !password) {
+		response.send(400);
+	}
 
-			if (err) throw err;
+	// If their session is locked out, don't waste the db's time.
+	if (!request.session.lockedOut) {
+		client.db(dbName).collection(dbCollection).find({'username' : username}).toArray(function(err_db, result) {
 
-			// result: [{"username" : "...", "password" : "..."}] //
-			bcrypt.compare(password, result[0]['password'], function(err, result) {
-				if (err) throw err;
-				if(result) {
+			if (err_db) throw err_db;
+
+			// Hash check the inputed password against the one in the database.
+			bcrypt.compare(password, result[0]['password'], function(err_hash, result) {
+
+				if (err_hash) throw err_hash;
+
+				if(result) { // If sucessful login								
 					request.session.user = username;
 					request.session.loggedin = true;
 					request.session.incorrectLoginAttempts = 0;
-				} else {
+				} else {     // If unsuccessful login
 					request.session.incorrectLoginAttempts = request.session.incorrectLoginAttempts + 1;
 					if(request.session.incorrectLoginAttempts == 3) {
 						request.session.lockedOut = true;
 					}
 				}
-				console.log("Session Details: " + request.session.loggedin + " " + request.session.incorrectLoginAttempts);
+
+				console.log(
+					"Session Details: " +
+					request.session.loggedin + " " + 
+					request.session.incorrectLoginAttempts
+					);
+
+				// Send the results
 				response.send({
 					"loginStatus" : request.session.loggedin,
 					"incorrectAttempts" : request.session.incorrectLoginAttempts,
@@ -99,6 +115,7 @@ server.post('/authenticate', function(request, response) {
 			});
 		});
 	} else {
+		// If no username or password was entered, send status code 400 (Bad Request).
 		response.send({
 			"loginStatus" : request.session.loggedin,
 			"incorrectAttempts" : request.session.incorrectLoginAttempts,
@@ -118,7 +135,7 @@ server.post('/authenticate', function(request, response) {
  *  	"loginStatus" : boolen -- true if logged in, false if not.
  *  }
 /*/
-server.post('/sessionstatus', function(request, response) {
+server.get('/authenticate', function(request, response) {
 	if (request.session.loggedin) {
 		console.log(request.session.user + " has been auto-redirected.");
 		response.send({"loginStatus" : true});
@@ -137,7 +154,7 @@ server.get('/home', function(request, response) {
 	if (request.session.loggedin) {
 		response.send('<h1>Hey there ' + request.session.user + ', you are now logged in. ✅</h1>');
 	} else {
-		response.send(403, '<h1>Please login to view this page! ⛔</h1>');
+		response.send(403, '<h1>Please login to view this page! ⛔</h1>');  // Status code 403 (Forbidden).
 	}
 	response.end();
 });

@@ -6,8 +6,8 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <script>
             $.ajax({
-                url: 'http://localhost:8080/sessionstatus',
-                method:'POST',
+                url: 'http://localhost:8080/authenticate',
+                method:'get',
                 data: {}
                 }).done(function(data){if(data['loginStatus'] == true) window.location.href="/home";})
         </script>
