@@ -78,7 +78,7 @@ server.post('/authenticate', function(request, response) {
 	}
 
 	// If their session is locked out, don't waste the db's time.
-	if (!request.session.lockedOut) {
+	if (username && password && !request.session.lockedOut) {
 		client.db(dbName).collection(dbCollection).find({'username' : username}).toArray(function(err_db, result) {
 
 			if (err_db) throw err_db;
