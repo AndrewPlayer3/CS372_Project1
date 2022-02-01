@@ -2,8 +2,13 @@
 
 <html>
     <head>
+        
         <title>Cool Login Page</title>
+
+        <!-- jQuery -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        
+        <!-- jQuery script to auto-redirect authenticated sessions -->
         <script>
             $.ajax({
                 url: 'http://localhost:8080/authenticate',
@@ -11,58 +16,154 @@
                 data: {}
                 }).done(function(data){if(data['loginStatus'] == true) window.location.href="/home";})
         </script>
+
+        <!-- Styles -->
+        <style>
+            * {
+                font-family: monospace;
+            }
+            .login {
+                display: block;
+                text-align: center;
+            }
+            .login_form_part {
+                margin-top: 20px;
+            }
+            label {
+                padding-right: 106px;
+            }
+            input {
+                margin-top: 3px;
+            }
+            .btn {
+                padding-left: 120px;
+            }
+            .error {
+                color: red;
+            }
+        </style>
+
     </head>
     <body>
-        <h1>Login</h1>
-        <div class="login-form">
+        
+        <!-- Main login page div -->
+        <div class="login">
 
-            <label for="username">Username: </label>
-            <input id="username" name="username" type="text" placeholder="Enter Username" required>
+            <!-- Heading -->
+            <div class="login_heading">   
+                <h1>🛑 Login Here: 🛑</h1>
+                <hr>
+            </div> 
+            
+            <!-- Login div rather than form for jQuery -->
+            <div class="login_form" style="margin-top: 40px;">
 
-            <label for="password">Password: </label>
-            <input id="password" name="password" type="password" placeholder="Enter Password" required>
+                <!-- Username Input -->
+                <div class="login_form_part input_box">
+                    <div>
+                        <label for="username">Username: </label>
+                    </div>
+                    <input id="username" name="username" type="text" placeholder="Enter Username" required>
+                    <p class="login_help_nouname"><!-- No username error is placed here --></p>
+                </div>
 
-            <button class="trigger" type="submit">Login</button>
+                <!-- Password Input -->
+                <div class="login_form_part input_box">
+                    <div>
+                        <label for="password">Password: </label>
+                    </div>
+                    <input id="password" name="password" type="password" placeholder="Enter Password" class="i_login_check_trigger" required>
+                    <p class="login_help_nopwd"><!-- No password error is placed here --></p>
+                </div>
 
-            <p class="badLoginWarning"></p>
+                <!-- Login Button -->
+                <div class="login_form_part btn">
+                    <button class="b_login_check_trigger" type="submit">Login</button>
+                </div>
 
-            <script name="login-check">
-                function changeDom(){
-                    $.ajax({
-                        url: 'http://localhost:8080/authenticate',
-                        method:'POST',
-                        data: {
-                            "username" : document.getElementById("username").value, 
-                            "password" : document.getElementById("password").value
-                        }
-                        }).done(function(data){
-                            if(data['loginStatus'] == true) {
-                                window.location.href="/home";
-                            } 
-                            else {
-                                if(data['lockedOut']) {
-                                    $('p.badLoginWarning').replaceWith(
-                                        '<p class="badLoginWarning">You have been locked out.</p>'
-                                     );
-                                } else if(data['incorrectAttempts'] == 2) {
-                                    $('p.badLoginWarning').replaceWith(
-                                        '<p class="badLoginWarning">The username or password you entered is incorrect. You have 1 attempt remaining.</p>'
-                                     );
-                                } else {
-                                    $('p.badLoginWarning').replaceWith(
-                                        '<p class="badLoginWarning">The username or password you entered is incorrect.</p>'
-                                     );
+                <!-- Login call-to-action and warnings. -->
+                <div class="login_form_part login_help_div">
+                    <p class="login_help">Please enter your username and password.</p>
+                </div>
+
+                <!-- jQuery script to deal with login verification and errors -->
+                <script name="login-check"> 
+                    function changeDom(){
+
+                        // Reset no username and no password statements
+                        $('p.login_help_nouname').replaceWith(
+                                '<p class="login_help_nouname"></p>'
+                            );
+                        $('p.login_help_nopwd').replaceWith(
+                            '<p class="login_help_nopwd"></p>'
+                        ); 
+
+                        // Get the username and password values and insure they are filled
+                        username = document.getElementById("username").value
+                        password = document.getElementById("password").value
+                        if (!username && !password){
+                            $('p.login_help').replaceWith(
+                                '<p class="login_help error">You need to enter a username and password.</p>'
+                            );
+                        } else if (!username) {
+                            $('p.login_help_nouname').replaceWith(
+                                '<p class="login_help_nouname error">You need to enter a username.</p>'
+                            );
+                        } else if (!password) {
+                            $('p.login_help_nopwd').replaceWith(
+                                '<p class="login_help_nopwd error">You need to enter a Password.</p>'
+                            );                       
+                        } else {
+                            $.ajax({
+                                url: 'http://localhost:8080/authenticate',
+                                method:'POST',
+                                data: {
+                                    "username" : username, 
+                                    "password" : password
                                 }
-                            } 
-                        }).fail(function(){
-                            console.log('BAD POST REQUEST!');
-                        });
-                    };
-                $('.trigger').click(function(){
-                    changeDom();
-                });
-           </script>
-
+                                }).done(function(data){
+                                    if (data['loginStatus'] == true) { // Redirect if successful login
+                                        window.location.href="/home";
+                                    } 
+                                    else {                             // Give proper error if incorrect login
+                                        if (data['lockedOut']) {
+                                            $('p.login_help').replaceWith(
+                                                '<p class="login_help error">You have been locked out.</p>'
+                                            );
+                                        } else if (data['incorrectAttempts'] == 2) {
+                                            $('p.login_help').replaceWith(
+                                                '<p class="login_help error">The username or password you entered is incorrect. You have 1 attempt remaining.</p>'
+                                            );
+                                        } else {
+                                            $('p.login_help').replaceWith(
+                                                '<p class="login_help error">The username or password you entered is incorrect.</p>'
+                                            );
+                                        }
+                                    } 
+                                }).fail(function(){
+                                    console.log('BAD POST REQUEST!');
+                                });
+                            }
+                        };
+                    // Clicking the login button is a trigger
+                    $('.b_login_check_trigger').click(function(){ 
+                        changeDom();
+                    });
+                    // Pressing enter in the password box is also a trigger
+                    $.fn.pressEnter = function(fn) {
+                        return this.each(function() {  
+                            $(this).bind('enterPress', fn);
+                            $(this).keyup(function(e){
+                                if (e.keyCode == 13)
+                                {
+                                    $(this).trigger("enterPress");
+                                }
+                            })
+                        });  
+                        }; 
+                    $('.i_login_check_trigger').pressEnter(function(){changeDom();})
+                </script>
+            </div>
         </div>
     </body>
 </html>
