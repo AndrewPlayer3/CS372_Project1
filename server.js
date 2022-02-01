@@ -154,7 +154,7 @@ server.get('/home', function(request, response) {
 	if (request.session.loggedin) {
 		response.send('<h1>Hey there ' + request.session.user + ', you are now logged in. ✅</h1>');
 	} else {
-		response.send(403, '<h1>Please login to view this page! ⛔</h1>');  // Status code 403 (Forbidden).
+		response.redirect('http://localhost:8080/');
 	}
 	response.end();
 });
