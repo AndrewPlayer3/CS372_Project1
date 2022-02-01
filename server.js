@@ -52,9 +52,9 @@ server.get('/', function(request, response) {
  *  Responds:
  *  ---------
  *  {
- *      "loginStatus" : boolean,        -- whether the user is logged in or not
+ *      "loginStatus"       : boolean,  -- whether the user is logged in or not
  *      "incorrectAttempts" : integer,  -- how many times they failed logging in
- *      "lockedOut" : boolean           -- whether the user's session is locked or not
+ *      "lockedOut"         : boolean   -- whether the user's session is locked or not
  *  }
 /*/
 server.post('/authenticate', function(request, response) {
@@ -132,7 +132,7 @@ server.post('/authenticate', function(request, response) {
  *  Responds:
  *  ---------
  *  {
- *      "loginStatus" : boolen -- true if logged in, false if not.
+ *      "loginStatus" : boolen -- whether the user is logged in or not
  *  }
 /*/
 server.get('/authenticate', function(request, response) {
