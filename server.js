@@ -3,10 +3,10 @@ const bcrypt = require('bcrypt');
 const session = require('express-session');
 const html = require('html');
 const path = require('path');
-/*/
- * If you get a TextEncoder not Defined Error, you need to copy this
- * in the beginning of the file that gives the error:
- * const {TextEncoder, TextDecoder} = require('util');	
+/*/ 
+ *  ⛔ If you get a TextEncoder not Defined Error, you need to copy this
+ *  ⛔ in the beginning of the file that gives the error:
+ *  ⛔ const {TextEncoder, TextDecoder} = require('util');
 /*/
 const {MongoClient} = require('mongodb');
 const { render } = require('express/lib/response');
@@ -35,6 +35,7 @@ server.use(session({
 }));
 server.use(express.urlencoded({extended : true}));
 server.use(express.json());
+
 
 /*/
  *  Load the initial login page that has the form.
@@ -72,9 +73,9 @@ server.post('/authenticate', function(request, response) {
 
 	if (username && password && !request.session.lockedOut) {
 		client.db(dbName).collection(dbCollection).find({'username' : username}).toArray(function(err, result) {
-			
+
 			if (err) throw err;
-			
+
 			// result: [{"username" : "...", "password" : "..."}] //
 			bcrypt.compare(password, result[0]['password'], function(err, result) {
 				if (err) throw err;
@@ -105,6 +106,26 @@ server.post('/authenticate', function(request, response) {
 		});
 		response.end();
 	}
+});
+
+
+/*/
+ *  Post to find out if a user's session cookie is authenticated.
+ *
+ *  Responds:
+ *  ---------
+ *  {
+ *  	"loginStatus" : boolen -- true if logged in, false if not.
+ *  }
+/*/
+server.post('/sessionstatus', function(request, response) {
+	if (request.session.loggedin) {
+		console.log(request.session.user + " has been auto-redirected.");
+		response.send({"loginStatus" : true});
+	} else {
+		response.send({"loginStatus" : false});
+	}
+	response.end();
 });
 
 
