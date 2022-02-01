@@ -4,6 +4,13 @@
     <head>
         <title>Cool Login Page</title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script>
+            $.ajax({
+                url: 'http://localhost:8080/sessionstatus',
+                method:'POST',
+                data: {}
+                }).done(function(data){if(data['loginStatus'] == true) window.location.href="/home";})
+        </script>
     </head>
     <body>
         <h1>Login</h1>
@@ -16,47 +23,46 @@
             <input id="password" name="password" type="password" placeholder="Enter Password" required>
 
             <button class="trigger" type="submit">Login</button>
+
             <p class="badLoginWarning"></p>
 
             <script name="login-check">
                 function changeDom(){
-                    username = document.getElementById("username").value;
-                    password = document.getElementById("password").value;
-                    console.log(username + " " + password);
                     $.ajax({
                         url: 'http://localhost:8080/authenticate',
                         method:'POST',
-                        data: {"username" : username, "password" : password}
+                        data: {
+                            "username" : document.getElementById("username").value, 
+                            "password" : document.getElementById("password").value
+                        }
                         }).done(function(data){
-                            loginStatus = data['loginStatus'];
-                            incorrectAttempts = data['incorrectAttempts'];
-                            lockedOut = data['lockedOut'];
-                            console.log(loginStatus + " " + incorrectAttempts + " " + lockedOut);
-                            if(loginStatus == false) {
-                                if(lockedOut) {
-                                    console.log("Locked");
-                                    $('p.badLoginWarning').replaceWith('<p class="badLoginWarning">You have been locked out.</p>');
-                                } else if(incorrectAttempts == 2) {
-                                    console.log("One More");
-                                    $('p.badLoginWarning').replaceWith('<p class="badLoginWarning">The username or password you entered is incorrect. You have 1 attempt remaining.</p>');
-                                } else {
-                                    console.log("Warned");
-                                    $('p.badLoginWarning').replaceWith('<p class="badLoginWarning">The username or password you entered is incorrect.</p>');
-                                }
-                            } else {
+                            if(data['loginStatus'] == true) {
                                 window.location.href="/home";
-                            }
-                            console.log(data);
-                            return;
+                            } 
+                            else {
+                                if(data['lockedOut']) {
+                                    $('p.badLoginWarning').replaceWith(
+                                        '<p class="badLoginWarning">You have been locked out.</p>'
+                                     );
+                                } else if(data['incorrectAttempts'] == 2) {
+                                    $('p.badLoginWarning').replaceWith(
+                                        '<p class="badLoginWarning">The username or password you entered is incorrect. You have 1 attempt remaining.</p>'
+                                     );
+                                } else {
+                                    $('p.badLoginWarning').replaceWith(
+                                        '<p class="badLoginWarning">The username or password you entered is incorrect.</p>'
+                                     );
+                                }
+                            } 
                         }).fail(function(){
                             console.log('BAD POST REQUEST!');
-                            return;
                         });
                     };
                 $('.trigger').click(function(){
                     changeDom();
                 });
            </script>
+
         </div>
     </body>
 </html>
