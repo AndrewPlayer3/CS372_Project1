@@ -1,7 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
-const html = require('html');
 const path = require('path');
 /*/ 
  *  ⛔ If you get a TextEncoder not Defined Error, you need to copy this
@@ -9,7 +8,7 @@ const path = require('path');
  *  ⛔ const {TextEncoder, TextDecoder} = require('util');
 /*/
 const { MongoClient } = require('mongodb');
-const { render } = require('express/lib/response');
+
 
 /*/
  *  Database Information - Change this if yours is different doesn't match.
@@ -18,11 +17,15 @@ const url = "mongodb://localhost:27017/";
 const client = new MongoClient(url);
 const dbName = "UserDB";
 const dbCollection = "users";
-client.connect();
+
+
+client.connect().then(
+    r => console.log("Connected to mongodb at " + url + " with response " + r)
+);
 
 
 // We are using express as the web server.
-var server = express();
+const server = express();
 
 
 /*/
@@ -49,8 +52,13 @@ server.get('/', function (request, response) {
  *  This accepts the post from the login for, and preforms the
  *  password check against the result from the mongodb.
  *
- *  Responds:
- *  ---------
+ *  Request Format:
+ *  {
+ *      "username" : "theUsername",
+ *      "password" : "thePassword"
+ *  }
+ *
+ *  Response Format:
  *  {
  *      "loginStatus"       : boolean,  -- whether the user is logged in or not
  *      "incorrectAttempts" : integer,  -- how many times they failed logging in
@@ -67,10 +75,10 @@ server.post('/authenticate', function (request, response) {
         request.session.lockedOut = false;
     }
 
-    var username = request.body.username;
-    var password = request.body.password;
+    const username = request.body.username;
+    const password = request.body.password;
 
-    console.log("Recieved request for user: " + username);
+    console.log("Received request for user: " + username);
 
     // Send 400 [Bad Request] if the uname or pwd is missing.
     if (!username || !password) {
@@ -83,18 +91,18 @@ server.post('/authenticate', function (request, response) {
 
             if (err_db) throw err_db;
 
-            // Hash check the inputed password against the one in the database.
+            // Hash check the inputted password against the one in the database.
             bcrypt.compare(password, result[0]['password'], function (err_hash, result) {
 
                 if (err_hash) throw err_hash;
 
-                if (result) { // If sucessful login								
+                if (result) { // If successful login
                     request.session.user = username;
                     request.session.loggedin = true;
                     request.session.incorrectLoginAttempts = 0;
                 } else {     // If unsuccessful login
                     request.session.incorrectLoginAttempts = request.session.incorrectLoginAttempts + 1;
-                    if (request.session.incorrectLoginAttempts == 3) {
+                    if (request.session.incorrectLoginAttempts === 3) {
                         request.session.lockedOut = true;
                     }
                 }
@@ -129,10 +137,10 @@ server.post('/authenticate', function (request, response) {
 /*/
  *  Post to find out if a user's session cookie is authenticated.
  *
- *  Responds:
- *  ---------
+ *  Response Format:
+ *  ----------------
  *  {
- *      "loginStatus" : boolen -- whether the user is logged in or not
+ *      "loginStatus" : boolean  -- whether the user is logged in or not
  *  }
 /*/
 server.get('/authenticate', function (request, response) {
