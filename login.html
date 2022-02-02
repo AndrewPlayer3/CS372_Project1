@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
 
 <head>
 
@@ -9,13 +9,13 @@
     <!-- jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-    <!-- jQuery script to auto-redirect authenticated sessions -->
+    <!-- jQuery script used to auto-redirect authenticated sessions -->
     <script>
         $.ajax({
             url: 'http://localhost:8080/authenticate',
             method: 'get',
             data: {}
-        }).done(function (data) { if (data['loginStatus'] == true) window.location.href = "/home"; })
+        }).done(function (data) { if (data['loginStatus'] === true) window.location.href = "/home"; })
     </script>
 
     <!-- Styles -->
@@ -72,7 +72,7 @@
                     <label for="username">Username: </label>
                 </div>
                 <input id="username" name="username" type="text" placeholder="Enter Username" required>
-                <p class="login_help_nouname">
+                <p class="login_help_no_uname">
                     <!-- No username error is placed here -->
                 </p>
             </div>
@@ -84,7 +84,7 @@
                 </div>
                 <input id="password" name="password" type="password" placeholder="Enter Password"
                     class="i_login_check_trigger" required>
-                <p class="login_help_nopwd">
+                <p class="login_help_no_pwd">
                     <!-- No password error is placed here -->
                 </p>
             </div>
@@ -99,32 +99,47 @@
                 <p class="login_help">Please enter your username and password.</p>
             </div>
 
-            <!-- jQuery script to deal with login verification and errors -->
+            <!-- jQuery script that renders warnings and verifies login info -->
             <script name="login-check">
                 function changeDom() {
 
-                    // Reset no username and no password statements
-                    $('p.login_help_nouname').replaceWith(
-                        '<p class="login_help_nouname"></p>'
-                    );
-                    $('p.login_help_nopwd').replaceWith(
-                        '<p class="login_help_nopwd"></p>'
-                    );
+                    const $no_uname_element = jQuery('p.login_help_no_uname');
+                    const $no_pwd_element = jQuery('p.login_help_no_pwd');
+                    const $login_help_element = jQuery('p.login_help');
 
-                    // Get the username and password values and insure they are filled
-                    username = document.getElementById("username").value
-                    password = document.getElementById("password").value
+                    const clear_no_uname_element = () =>
+                        $no_uname_element.replaceWith(
+                            '<p class="login_help_no_uname"></p>'
+                        );
+                    const clear_no_pwd_element = () =>
+                        $no_pwd_element.replaceWith(
+                            '<p class="login_help_no_pwd"></p>'
+                        );
+
+                    const username = document.getElementById("username").value
+                    const password = document.getElementById("password").value
+
                     if (!username && !password) {
-                        $('p.login_help').replaceWith(
-                            '<p class="login_help error">You need to enter a username and password.</p>'
+                        clear_no_uname_element();
+                        clear_no_pwd_element();
+                        $login_help_element.replaceWith(
+                            '<p class="login_help error">' +
+                                'You need to enter a username and password.' +
+                            '</p>'
                         );
                     } else if (!username) {
-                        $('p.login_help_nouname').replaceWith(
-                            '<p class="login_help_nouname error">You need to enter a username.</p>'
+                        clear_no_pwd_element();
+                        $no_uname_element.replaceWith(
+                            '<p class="login_help_no_uname error">' +
+                                'You need to enter a username.' +
+                            '</p>'
                         );
                     } else if (!password) {
-                        $('p.login_help_nopwd').replaceWith(
-                            '<p class="login_help_nopwd error">You need to enter a Password.</p>'
+                        clear_no_uname_element();
+                        $no_pwd_element.replaceWith(
+                            '<p class="login_help_no_pwd error">' +
+                                'You need to enter a Password.' +
+                            '</p>'
                         );
                     } else {
                         $.ajax({
@@ -135,21 +150,26 @@
                                 "password": password
                             }
                         }).done(function (data) {
-                            if (data['loginStatus'] == true) { // Redirect if successful login
+                            if (data['loginStatus'] === true) { // Redirect if successful login
                                 window.location.href = "/home";
                             }
                             else {                             // Give proper error if incorrect login
                                 if (data['lockedOut']) {
-                                    $('p.login_help').replaceWith(
+                                    $login_help_element.replaceWith(
                                         '<p class="login_help error">You have been locked out.</p>'
                                     );
-                                } else if (data['incorrectAttempts'] == 2) {
-                                    $('p.login_help').replaceWith(
-                                        '<p class="login_help error">The username or password you entered is incorrect. You have 1 attempt remaining.</p>'
+                                } else if (data['incorrectAttempts'] === 2) {
+                                    $login_help_element.replaceWith(
+                                        '<p class="login_help error">' +
+                                            'The username or password you entered is incorrect. ' +
+                                            'You have 1 attempt remaining.' +
+                                        '</p>'
                                     );
                                 } else {
-                                    $('p.login_help').replaceWith(
-                                        '<p class="login_help error">The username or password you entered is incorrect.</p>'
+                                    $login_help_element.replaceWith(
+                                        '<p class="login_help error">' +
+                                            'The username or password you entered is incorrect.' +
+                                        '</p>'
                                     );
                                 }
                             }
@@ -157,17 +177,17 @@
                             console.log('BAD POST REQUEST!');
                         });
                     }
-                };
+                }
                 // Clicking the login button is a trigger
                 $('.b_login_check_trigger').click(function () {
                     changeDom();
                 });
-                // Pressing enter in the password box is also a trigger
+                // Pressing "enter" in the password box is also a trigger
                 $.fn.pressEnter = function (fn) {
                     return this.each(function () {
                         $(this).bind('enterPress', fn);
                         $(this).keyup(function (e) {
-                            if (e.keyCode == 13) {
+                            if (e.keyCode === 13) {
                                 $(this).trigger("enterPress");
                             }
                         })
