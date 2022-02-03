@@ -2,13 +2,16 @@ const bcrypt = require('bcrypt');
 const {MongoClient} = require('mongodb');
 
 /*/
- *  ❗ Database Information - Change this if yours is different doesn't match. ❗
+ *  ❗ Database Information - Change this if yours is different. ❗
 /*/
 const url = "mongodb://localhost:27017/";
 const client = new MongoClient(url);
 const dbName = "UserDB";
 const dbCollection = "users";
-client.connect();
+
+client.connect().then(
+    r => console.log("Connected to mongodb at " + url + " with response " + r + "\n")
+);
 
 /*/ 
  * User Format: 
@@ -19,7 +22,6 @@ client.connect();
  * } 
  * ------------------------------
 /*/
-
 const username = "coolUsername";  // ❗ Change me! ❗
 const password = "coolPassword";  // ❗ Change me! ❗
 
