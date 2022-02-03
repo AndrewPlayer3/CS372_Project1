@@ -11,20 +11,17 @@ const { MongoClient } = require('mongodb');
 
 
 /*/
- *  Database Information - Change this if yours is different doesn't match.
+ *  ❗ Database Information - Change this if yours is different. ❗
 /*/
 const url = "mongodb://localhost:27017/";
 const client = new MongoClient(url);
 const dbName = "UserDB";
 const dbCollection = "users";
 
-
 client.connect().then(
-    r => console.log("Connected to mongodb at " + url + " with response " + r)
+    r => console.log("Connected to mongodb at " + url + " with response " + r + "\n")
 );
 
-
-// We are using express as the web server.
 const server = express();
 
 
@@ -49,10 +46,41 @@ server.get('/', function (request, response) {
 
 
 /*/
+ *  Log Session Info  -- Session Object should be fully initialized.
+/*/
+const logLoginSessionInfo = (sessionObject) => {
+    console.log(
+        "----------------------------------------------------------------------\n" +
+        "Session ID: " + sessionObject.id + "\n" +
+        "----------------------------------------------------------------------\n" +
+        "Username: " + (sessionObject.user ? sessionObject.user : "No Username Provided") + "\n" + 
+        "Login Status: " + sessionObject.loggedin + "\n" +
+        "Incorrect Login Attempts: " + sessionObject.incorrectLoginAttempts + "\n" +
+        "Locked Out: " + sessionObject.lockedOut + "\n" +
+        "----------------------------------------------------------------------\n"
+    );
+}
+
+
+/*/
+ *  Respond with the results of the authentication process done by post('/authenticate')
+/*/
+const sendAuthenticationResults = (response, sessionObject, log) => {
+    response.send({
+        "loginStatus": sessionObject.loggedin,
+        "incorrectAttempts": sessionObject.incorrectLoginAttempts,
+        "lockedOut": sessionObject.lockedOut
+    });
+    response.end();
+    if (log) logLoginSessionInfo(sessionObject);
+}
+
+
+/*/
  *  This accepts the post from the login for, and preforms the
  *  password check against the result from the mongodb.
  *
- *  Request Format:
+ *  Request Format:  -- If either, or, both of these fields are missing, it only responds with 400 [Bad Request].
  *  {
  *      "username" : "theUsername",
  *      "password" : "thePassword"
@@ -67,69 +95,62 @@ server.get('/', function (request, response) {
 /*/
 server.post('/authenticate', function (request, response) {
 
-    // Initialize session info for new sessions.
-    if (request.session.infoSet == null) {
-        request.session.infoSet = true;
-        request.session.incorrectLoginAttempts = 0;
-        request.session.loggedin = false;
-        request.session.lockedOut = false;
-    }
+    let sessionInfo = request.session;
 
     const username = request.body.username;
     const password = request.body.password;
 
-    console.log("Received request for user: " + username);
-
-    // Send 400 [Bad Request] if the uname or pwd is missing.
-    if (!username || !password) {
-        response.send(400);
+    if (sessionInfo.infoSet == null) {
+        sessionInfo.infoSet = true;
+        sessionInfo.incorrectLoginAttempts = 0;
+        sessionInfo.loggedin = false;
+        sessionInfo.lockedOut = false;
+        sessionInfo.id = request.sessionID;
     }
 
-    // If their session is locked out, don't waste the db's time.
+    sessionInfo.user = (username ? username : "");
+
+    if (!username || !password) {
+        response.sendStatus(400);
+        logLoginSessionInfo(sessionInfo);
+    }
+
     if (username && password && !request.session.lockedOut) {
+        // find username in dbCollection in dbName and get the username,password object for that user
         client.db(dbName).collection(dbCollection).find({ 'username': username }).toArray(function (err_db, result) {
 
             if (err_db) throw err_db;
 
-            // Hash check the inputted password against the one in the database.
-            bcrypt.compare(password, result[0]['password'], function (err_hash, result) {
-
-                if (err_hash) throw err_hash;
-
-                if (result) { // If successful login
-                    request.session.user = username;
-                    request.session.loggedin = true;
-                    request.session.incorrectLoginAttempts = 0;
-                } else {     // If unsuccessful login
-                    request.session.incorrectLoginAttempts = request.session.incorrectLoginAttempts + 1;
-                    if (request.session.incorrectLoginAttempts === 3) {
-                        request.session.lockedOut = true;
-                    }
+            if (!result[0]) {
+                // Username does not exist: this counts as a bad login attempt.
+                sessionInfo.incorrectLoginAttempts++;
+                if (sessionInfo.incorrectLoginAttempts === 3) {
+                    sessionInfo.lockedOut = true;
                 }
+                sendAuthenticationResults(response, sessionInfo, true);
+            } else {
+                // Hash check the inputted password against the one in the database.
+                bcrypt.compare(password, result[0]['password'], function (err_hash, successful_login) {
 
-                console.log(
-                    "Session Details: " +
-                    request.session.loggedin + " " +
-                    request.session.incorrectLoginAttempts
-                );
+                    if (err_hash) throw err_hash;
 
-                // Send the results
-                response.send({
-                    "loginStatus": request.session.loggedin,
-                    "incorrectAttempts": request.session.incorrectLoginAttempts,
-                    "lockedOut": request.session.lockedOut
+                    if (successful_login) {
+                        sessionInfo.user = username;
+                        sessionInfo.loggedin = true;
+                        sessionInfo.incorrectLoginAttempts = 0;
+                    } else {
+                        sessionInfo.incorrectLoginAttempts++;
+                        if (sessionInfo.incorrectLoginAttempts === 3) {
+                            sessionInfo.lockedOut = true;
+                        }
+                    }
+                    sendAuthenticationResults(response, sessionInfo, true);
                 });
-                response.end();
-            });
+            }
         });
-    } else {
-        // If no username or password was entered, send status code 400 (Bad Request).
-        response.send({
-            "loginStatus": request.session.loggedin,
-            "incorrectAttempts": request.session.incorrectLoginAttempts,
-            "lockedOut": request.session.lockedOut
-        });
-        response.end();
+    } else if (username && password) {
+        // Should only get here if locked out
+        sendAuthenticationResults(response, sessionInfo, true);
     }
 });
 
@@ -145,7 +166,11 @@ server.post('/authenticate', function (request, response) {
 /*/
 server.get('/authenticate', function (request, response) {
     if (request.session.loggedin) {
-        console.log(request.session.user + " has been auto-redirected.");
+        console.log(
+            "----------------------------------------------------------------------\n" + 
+            "Auto-Redirected: " + request.session.user + "\n" +
+            "----------------------------------------------------------------------\n"
+        );
         response.send({ "loginStatus": true });
     } else {
         response.send({ "loginStatus": false });
