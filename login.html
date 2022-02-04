@@ -8,6 +8,8 @@
 
     <!-- jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 
     <!-- jQuery script used to auto-redirect authenticated sessions -->
     <script>
@@ -18,7 +20,7 @@
         }).done(function (data) { if (data['loginStatus'] === true) window.location.href = "/home"; })
     </script>
 
-    <!-- Styles -->
+   <!-- Styles -->
     <style>
         * {
             font-family: monospace;
@@ -28,9 +30,44 @@
             display: block;
             text-align: center;
         }
+        .ui-widget-header,.ui-state-default, ui-button{  
+            background:crimson;  
+            border: 2px solid brown;  
+            color: white;  
+            font-weight: bold;
+         } 
 
-        .login_form_part {
-            margin-top: 20px;
+        .signUpDialog input{
+            margin:  7px 0;
+            border: none;
+            border-bottom: 2px solid grey;
+        } 
+
+        .signUpDialog button{
+            margin-bottom: 4px;
+            position: absolute;
+            bottom: 0;
+            right: 15%;
+            border: none;
+            background-color: crimson;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            width: 70%;
+            transition-duration: 0.4s;
+            font-size: 0.8em;
+            width: 15em;
+            height: 2em;
+        } 
+
+        .signUpDialog button:hover{
+            opacity: 0.7;
+        }
+        .buttons_form {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            margin: 6px;
         }
 
         label {
@@ -39,10 +76,6 @@
 
         input {
             margin-top: 3px;
-        }
-
-        .btn {
-            padding-left: 120px;
         }
 
         .error {
@@ -87,6 +120,29 @@
                 <p class="login_help_no_pwd">
                     <!-- No password error is placed here -->
                 </p>
+            </div>
+
+            <div class= "signUpDialog" title = "Sign Up">
+                <input id="sEmail" name="email" placeholder="Email">
+                <input id="sUsrnm" name="username" placeholder="Username">
+                <input id="sPwd" name="password" type="password" placeholder="Password">
+                <input id="sRePwd" name="password" type="password" placeholder="Re-Enter Password">
+                <p class="signup_help">
+                    <!-- Error is placed here -->
+                </p>
+                <button class="b_signup_form_trigger" type="submit">Sign Up!</button>
+            </div>
+
+            <div class="buttons_form">
+                <!-- ResetPwd Button -->
+                <div class="reset_form_part btn" style = "padding-right: 10px;">
+                    <a class="b_reset_check_trigger" href="#">Forgot Password</a>
+                </div>
+
+                <!-- Signup Button -->
+                <div class="signup_form_part btn">
+                    <a class="b_signup_check_trigger" href="#">Sign Up</a>
+                </div>
             </div>
 
             <!-- Login Button -->
@@ -178,10 +234,79 @@
                         });
                     }
                 }
+
+                function signUp(){
+                    const $signup_help = jQuery('p.signup_help');
+
+                    const email = document.getElementById("sEmail").value
+                    const username = document.getElementById("sUsrnm").value
+                    const password = document.getElementById("sPwd").value
+                    const repassword = document.getElementById("sRePwd").value
+
+                    if (!email){
+                        $signup_help.replaceWith(
+                            '<p class="signup_help error">' +
+                                'Enter Email.' +
+                            '</p>'
+                        );
+                    }
+                    else if (!username){
+                        $signup_help.replaceWith(
+                            '<p class="signup_help error">' +
+                                'Enter Username.' +
+                            '</p>'
+                        );
+                    }
+                    else if (!password){
+                        $signup_help.replaceWith(
+                            '<p class="signup_help error">' +
+                                'Enter Password.' +
+                            '</p>'
+                        );
+                    }
+                    else if (!repassword){
+                        $signup_help.replaceWith(
+                            '<p class="signup_help error">' +
+                                'Re-Type Password.' +
+                            '</p>'
+                        );
+                    }
+                    else if(!(password === repassword)){
+                        $signup_help.replaceWith(
+                            '<p class="signup_help error">' +
+                                'Passwords do not match.' +
+                            '</p>'
+                        );
+                    } else {
+                        
+                    }
+
+
+                }
                 // Clicking the login button is a trigger
                 $('.b_login_check_trigger').click(function () {
                     changeDom();
                 });
+
+                // Dialog setup
+                $( ".signUpDialog" ).dialog({  
+                   autoOpen: false,   
+                   hide: "fadeOut",  
+                   show : "fadeIn",  
+                   height: 275,
+                   position: { my: "center", at: "center top", of: window }        
+                }); 
+
+                // Clicking the signup button is a trigger
+                $('.b_signup_check_trigger').click(function () {
+                    $('.signUpDialog').dialog("open");
+                });
+
+                // Clicking the signup button is a trigger
+                $('.b_signup_form_trigger').click(function () {
+                    signUp();
+                });
+
                 // Pressing "enter" in the password box is also a trigger
                 $.fn.pressEnter = function (fn) {
                     return this.each(function () {
