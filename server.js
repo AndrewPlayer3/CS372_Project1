@@ -156,7 +156,7 @@ server.post('/authenticate', function (request, response) {
 
 
 /*/
- *  Post to find out if a user's session cookie is authenticated.
+ *  Get to find out if a user's session cookie is authenticated.
  *
  *  Response Format:
  *  ----------------
@@ -176,6 +176,82 @@ server.get('/authenticate', function (request, response) {
         response.send({ "loginStatus": false });
     }
     response.end();
+});
+
+
+/*/
+ *  Post to create account
+ *
+ *  Request Format:
+ *  {
+ *      "email"     : "theEmail"   ,
+ *      "username"  : "theUsername",
+ *      "password"  : "thePassword"
+*  }
+ * 
+ *  Response Format:
+ *  ----------------
+ *  {
+ *      "emailInUse"     : boolean  -- whether the email is alreay in use
+ *      "usenameInUse"   : boolean  -- whether the username is alreay in use
+ *      "createdAccount" : boolean  -- whether the account was created successfully
+ *  }
+/*/
+server.post('/create-account', function(request, response) {
+    let sessionInfo = request.session;
+
+    const email    = request.body.email;
+    const username = request.body.username;
+    const password = request.body.password;
+
+    let res = {
+        "emailInUse" : false,
+        "usernameInUse" : false,
+        "accountCreated" : false
+    };
+
+    sessionInfo.user = (username ? username : "");
+
+    if (!email || !username || !password) {
+        response.sendStatus(400);
+    } else {
+        const saltRounds = 10;
+        bcrypt.genSalt(saltRounds, function(err_salt, salt) {
+            if (err_salt) throw err_salt;
+            bcrypt.hash(password, salt, function(err_hash, hash) {
+                if (err_hash) throw err_hash;
+                client.db(dbName).collection(dbCollection).find({'username' : username}).toArray(function(err_find, result) {
+                    if (err_find) throw err_find;
+                    if (result[0]) {
+                        res['usernameInUse'] = true;
+                        response.send(res);
+                    } else {
+                        client.db(dbName).collection(dbCollection).find({'email' : email}).toArray(function(err_find, result) {
+                            if (err_find) throw err_find;
+                            if (result[0]) {
+                                res['emailInUse'] = true;
+                                response.send(res);
+                            } else {
+                                const user = {
+                                    "email"    : email,
+                                    "username" : username,
+                                    "password" : hash
+                                }
+                                client.db(dbName).collection(dbCollection).insertOne(user, function(err_insert, result) {
+                                    if (err_insert) throw err_insert;
+                                    if (result) { 
+                                        res['accountCreated'] = true;
+                                        console.log("Added user " + username + ", with email " + email + " to the database. 👍");
+                                    }
+                                    response.send(res);
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    }
 });
 
 
