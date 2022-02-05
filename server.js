@@ -187,7 +187,7 @@ server.get('/authenticate', function (request, response) {
  *      "email"     : "theEmail"   ,
  *      "username"  : "theUsername",
  *      "password"  : "thePassword"
-*  }
+ *  }
  * 
  *  Response Format:
  *  ----------------
