@@ -199,7 +199,7 @@ server.get('/authenticate', function (request, response) {
 /*/
 server.post('/create-account', function (request, response) {
 
-    let sessionInfo = request.session
+    let sessionInfo = request.session;
 
     const email = request.body.email;
     const username = request.body.username;
