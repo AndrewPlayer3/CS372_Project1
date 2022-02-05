@@ -53,7 +53,7 @@ const logLoginSessionInfo = (sessionObject) => {
         "----------------------------------------------------------------------\n" +
         "Session ID: " + sessionObject.id + "\n" +
         "----------------------------------------------------------------------\n" +
-        "Username: " + (sessionObject.user ? sessionObject.user : "No Username Provided") + "\n" + 
+        "Username: " + (sessionObject.user ? sessionObject.user : "No Username Provided") + "\n" +
         "Login Status: " + sessionObject.loggedin + "\n" +
         "Incorrect Login Attempts: " + sessionObject.incorrectLoginAttempts + "\n" +
         "Locked Out: " + sessionObject.lockedOut + "\n" +
@@ -167,7 +167,7 @@ server.post('/authenticate', function (request, response) {
 server.get('/authenticate', function (request, response) {
     if (request.session.loggedin) {
         console.log(
-            "----------------------------------------------------------------------\n" + 
+            "----------------------------------------------------------------------\n" +
             "Auto-Redirected: " + request.session.user + "\n" +
             "----------------------------------------------------------------------\n"
         );
@@ -197,51 +197,72 @@ server.get('/authenticate', function (request, response) {
  *      "createdAccount" : boolean  -- whether the account was created successfully
  *  }
 /*/
-server.post('/create-account', function(request, response) {
-    let sessionInfo = request.session;
+server.post('/create-account', function (request, response) {
 
-    const email    = request.body.email;
+    const email = request.body.email;
     const username = request.body.username;
     const password = request.body.password;
 
     let res = {
-        "emailInUse" : false,
-        "usernameInUse" : false,
-        "accountCreated" : false
+        "emailInUse": false,
+        "usernameInUse": false,
+        "accountCreated": false
     };
 
-    sessionInfo.user = (username ? username : "");
-
+    // Send status code 400 [Bad Request] if not all information was provided
     if (!email || !username || !password) {
         response.sendStatus(400);
     } else {
+
         const saltRounds = 10;
-        bcrypt.genSalt(saltRounds, function(err_salt, salt) {
+
+        // Generate a salt and then hash the password with bcrypt
+        bcrypt.genSalt(saltRounds, function (err_salt, salt) {
+
             if (err_salt) throw err_salt;
-            bcrypt.hash(password, salt, function(err_hash, hash) {
+
+            bcrypt.hash(password, salt, function (err_hash, hash) {
+
                 if (err_hash) throw err_hash;
-                client.db(dbName).collection(dbCollection).find({'username' : username}).toArray(function(err_find, result) {
-                    if (err_find) throw err_find;
+
+                // Check if email already exists
+                client.db(dbName).collection(dbCollection).find({ 'email': email }).toArray(function (err_findEmail, result) {
+
+                    if (err_findEmail) throw err_findEmail;
+
                     if (result[0]) {
-                        res['usernameInUse'] = true;
+                        res['emailInUse'] = true;
                         response.send(res);
                     } else {
-                        client.db(dbName).collection(dbCollection).find({'email' : email}).toArray(function(err_find, result) {
-                            if (err_find) throw err_find;
+
+                        // Check if username already exists
+                        client.db(dbName).collection(dbCollection).find({ 'username': username }).toArray(function (err_findUser, result) {
+
+                            if (err_findUser) throw err_findUser;
+
                             if (result[0]) {
-                                res['emailInUse'] = true;
+                                res['usernameInUse'] = true;
                                 response.send(res);
                             } else {
+
                                 const user = {
-                                    "email"    : email,
-                                    "username" : username,
-                                    "password" : hash
+                                    "email": email,
+                                    "username": username,
+                                    "password": hash
                                 }
-                                client.db(dbName).collection(dbCollection).insertOne(user, function(err_insert, result) {
+
+                                // Insert the new user into the database
+                                client.db(dbName).collection(dbCollection).insertOne(user, function (err_insert, result) {
+
                                     if (err_insert) throw err_insert;
-                                    if (result) { 
+
+                                    if (result) {
                                         res['accountCreated'] = true;
-                                        console.log("Added user " + username + ", with email " + email + " to the database. 👍");
+                                        console.log(
+                                            "----------------------------------------------------------------------\n" +
+                                            "Added user " + username + ", with email " + email + " to the database. 👍" +
+                                            "----------------------------------------------------------------------\n"
+                                        );
                                     }
                                     response.send(res);
                                 });
