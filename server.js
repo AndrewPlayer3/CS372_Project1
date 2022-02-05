@@ -199,6 +199,8 @@ server.get('/authenticate', function (request, response) {
 /*/
 server.post('/create-account', function (request, response) {
 
+    let sessionInfo = request.session
+
     const email = request.body.email;
     const username = request.body.username;
     const password = request.body.password;
@@ -263,6 +265,8 @@ server.post('/create-account', function (request, response) {
                                             "Added user " + username + ", with email " + email + " to the database. 👍\n" +
                                             "----------------------------------------------------------------------\n"
                                         );
+                                        sessionInfo.loggedin = true;
+                                        sessionInfo.user = username;
                                     }
                                     response.send(res);
                                 });
