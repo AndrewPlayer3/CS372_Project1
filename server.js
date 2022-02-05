@@ -260,7 +260,7 @@ server.post('/create-account', function (request, response) {
                                         res['accountCreated'] = true;
                                         console.log(
                                             "----------------------------------------------------------------------\n" +
-                                            "Added user " + username + ", with email " + email + " to the database. 👍" +
+                                            "Added user " + username + ", with email " + email + " to the database. 👍\n" +
                                             "----------------------------------------------------------------------\n"
                                         );
                                     }
