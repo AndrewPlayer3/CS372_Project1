@@ -192,8 +192,8 @@ server.get('/authenticate', function (request, response) {
  *  Response Format:
  *  ----------------
  *  {
- *      "emailInUse"     : boolean  -- whether the email is alreay in use
- *      "usenameInUse"   : boolean  -- whether the username is alreay in use
+ *      "emailInUse"     : boolean  -- whether the email is already in use
+ *      "usernameInUse"  : boolean  -- whether the username is already in use
  *      "createdAccount" : boolean  -- whether the account was created successfully
  *  }
 /*/
