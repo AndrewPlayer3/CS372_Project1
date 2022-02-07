@@ -71,7 +71,6 @@ const sendAuthenticationResults = (response, sessionObject, log) => {
         "incorrectAttempts": sessionObject.incorrectLoginAttempts,
         "lockedOut": sessionObject.lockedOut
     });
-    response.end();
     if (log) logLoginSessionInfo(sessionObject);
 }
 
@@ -156,12 +155,11 @@ server.post('/authenticate', function (request, response) {
 
 
 /*/
- *  Get to find out if a user's session cookie is authenticated.
+ *  Get the login status for a session
  *
  *  Response Format:
- *  ----------------
  *  {
- *      "loginStatus" : boolean  -- whether the user is logged in or not
+ *        "loginStatus : boolean"  -- True if the user is logged in, else false.
  *  }
 /*/
 server.get('/authenticate', function (request, response) {
@@ -175,7 +173,6 @@ server.get('/authenticate', function (request, response) {
     } else {
         response.send({ "loginStatus": false });
     }
-    response.end();
 });
 
 
@@ -290,7 +287,6 @@ server.get('/home', function (request, response) {
     } else {
         response.redirect('http://localhost:8080/');
     }
-    response.end();
 });
 
 
