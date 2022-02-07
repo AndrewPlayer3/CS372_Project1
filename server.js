@@ -46,6 +46,65 @@ server.get('/', function (request, response) {
 
 
 /*/
+ *  Increment a user's incorrectLoginAttempts and lock them out if those attempts are greater than 2
+/*/
+const punishBadLogin = (userObject) => {
+
+    const queryFilter = { "username": userObject.username };
+
+    const incorrectLoginAttempts = userObject['incorrectLoginAttempts'] + 1;
+
+    let updateFilter = {};
+
+    if (incorrectLoginAttempts < 3) {
+        updateFilter = { "$inc": { "incorrectLoginAttempts": 1 }, "$set": { "lastIncorrectAttemptTime": Date.now() } }
+    } else if (incorrectLoginAttempts === 3) {
+        updateFilter = { "$inc": { "incorrectLoginAttempts": 1 }, "$set": { "lockOutTime": Date.now() } };
+    } // Should further incorrect logins make update the lockOut time?
+
+    // Increment the incorrectLoginAttempts field in the database.
+    client.db(dbName).collection(dbCollection).updateOne(queryFilter, updateFilter, function (err_insert, result) {
+
+        if (err_insert) throw err_insert;
+
+        console.log(
+            "----------------------------------------------------------------------\n" +
+            "User " + userObject.username + ", has attempted to login incorrectly " + incorrectLoginAttempts + " times.\n" +
+            "----------------------------------------------------------------------\n"
+        );
+
+        return result;
+    });
+}
+
+
+/*/
+ *  Remove the lockOut and incorrectLoginAttempts from a user
+/*/
+const resetLockOut = (username) => {
+
+    const queryFilter = { "username": username };
+    const updateFilter = { "$set": { "lockOutTime": 0, "incorrectLoginAttempts": 0, "lastIncorrectAttemptTime": 0 } };
+
+    // Increment the incorrectLoginAttempts field in the database.
+    client.db(dbName).collection(dbCollection).updateOne(queryFilter, updateFilter, function (err_insert, result) {
+
+        if (err_insert) throw err_insert
+
+        else {
+            console.log(
+                "----------------------------------------------------------------------\n" +
+                "User " + username + ", has had their lockOutTime and incorrectLoginAttempts reset.\n" +
+                "----------------------------------------------------------------------\n"
+            );
+            return result;
+        }
+
+    });
+}
+
+
+/*/
  *  Log Session Info  -- Session Object should be fully initialized.
 /*/
 const logLoginSessionInfo = (sessionObject) => {
@@ -69,9 +128,40 @@ const sendAuthenticationResults = (response, sessionObject, log) => {
     response.send({
         "loginStatus": sessionObject.loggedin,
         "incorrectAttempts": sessionObject.incorrectLoginAttempts,
-        "lockedOut": sessionObject.lockedOut
+        "lockedOut": sessionObject.lockedOut,
+        "unknownUsername": sessionObject.unknownUsername
     });
     if (log) logLoginSessionInfo(sessionObject);
+}
+
+
+/*/
+ *  Check that the inputted password for the inputted username matches the one in the database
+/*/
+const authenticateKnownUser = (response, sessionInfo, userObject, password) => {
+
+    const dbUsername = userObject.username;
+    const dbPassword = userObject.password;
+
+    // Hash check the inputted password against the one in the database.
+    bcrypt.compare(password, dbPassword, function (err_hash, successful_login) {
+
+        if (err_hash) throw err_hash;
+
+        if (successful_login) {
+            sessionInfo.user = dbUsername;
+            sessionInfo.loggedin = true;
+            // Should successfully logging in reset the incorrect login attempts?
+            // resetLockOut(dbUsername);
+        } else {
+            sessionInfo.incorrectLoginAttempts++;
+            if (sessionInfo.incorrectLoginAttempts === 3) {
+                sessionInfo.lockedOut = true;
+            }
+            punishBadLogin(userObject);
+        }
+        sendAuthenticationResults(response, sessionInfo, true);
+    });
 }
 
 
@@ -99,57 +189,60 @@ server.post('/authenticate', function (request, response) {
     const username = request.body.username;
     const password = request.body.password;
 
+    const lockOutDurationSeconds = 86400
+    const lockOutDuration = lockOutDurationSeconds * 1000;
+
     if (sessionInfo.infoSet == null) {
         sessionInfo.infoSet = true;
-        sessionInfo.incorrectLoginAttempts = 0;
         sessionInfo.loggedin = false;
-        sessionInfo.lockedOut = false;
+        sessionInfo.unknownUsername = false;
         sessionInfo.id = request.sessionID;
     }
 
     sessionInfo.user = (username ? username : "");
+    sessionInfo.lockedOut = false;
+    sessionInfo.incorrectLoginAttempts = 0;
 
     if (!username || !password) {
         response.sendStatus(400);
         logLoginSessionInfo(sessionInfo);
-    }
+    } else {
 
-    if (username && password && !request.session.lockedOut) {
         // find username in dbCollection in dbName and get the username,password object for that user
-        client.db(dbName).collection(dbCollection).find({ 'username': username }).toArray(function (err_db, result) {
+        client.db(dbName).collection(dbCollection).find({ 'username': username }).toArray(function (err_db, userObjectArray) {
 
             if (err_db) throw err_db;
 
-            if (!result[0]) {
-                // Username does not exist: this counts as a bad login attempt.
-                sessionInfo.incorrectLoginAttempts++;
-                if (sessionInfo.incorrectLoginAttempts === 3) {
-                    sessionInfo.lockedOut = true;
-                }
+            let userObject = userObjectArray[0];
+
+            if (!userObject) { // Username does not exist
+                sessionInfo.unknownUsername = true;
                 sendAuthenticationResults(response, sessionInfo, true);
             } else {
-                // Hash check the inputted password against the one in the database.
-                bcrypt.compare(password, result[0]['password'], function (err_hash, successful_login) {
 
-                    if (err_hash) throw err_hash;
+                sessionInfo.incorrectLoginAttempts = userObject.incorrectLoginAttempts;
 
-                    if (successful_login) {
-                        sessionInfo.user = username;
-                        sessionInfo.loggedin = true;
-                        sessionInfo.incorrectLoginAttempts = 0;
-                    } else {
-                        sessionInfo.incorrectLoginAttempts++;
-                        if (sessionInfo.incorrectLoginAttempts === 3) {
-                            sessionInfo.lockedOut = true;
-                        }
+                const lockOutTime = userObject.lockOutTime;
+                const lockOutTimePassed = Date.now() - lockOutTime;
+                const lastIncorrectAttemptTime = userObject.lastIncorrectAttemptTime;
+                const lastIncorrectAttemptTimePassed = Date.now() - lastIncorrectAttemptTime;
+
+                if (lockOutTimePassed >= lockOutDuration) { // The user is not locked out
+                    if (lockOutTime > 0 || lastIncorrectAttemptTimePassed >= lockOutDuration) {                  // The user's lockOut has expired
+                        resetLockOut(username);
                     }
+                    authenticateKnownUser(response, sessionInfo, userObject, password);
+                } else {                                    // The user is locked out.
+                    console.log(
+                        "----------------------------------------------------------------------\n" +
+                        "User " + username + ", tried to login, but they are locked out.\n" +
+                        "----------------------------------------------------------------------\n"
+                    );
+                    sessionInfo.lockedOut = true;
                     sendAuthenticationResults(response, sessionInfo, true);
-                });
+                }
             }
         });
-    } else if (username && password) {
-        // Should only get here if locked out
-        sendAuthenticationResults(response, sessionInfo, true);
     }
 });
 
@@ -247,7 +340,10 @@ server.post('/create-account', function (request, response) {
                                 const user = {
                                     "email": email,
                                     "username": username,
-                                    "password": hash
+                                    "password": hash,
+                                    "incorrectLoginAttempts": 0,
+                                    "lastIncorrectAttemptTime": 0,
+                                    "lockOutTime": 0
                                 }
 
                                 // Insert the new user into the database
