@@ -278,7 +278,34 @@
                             '</p>'
                         );
                     } else {
-                        
+                        $.ajax({
+                            url: 'http://localhost:8080/create-account',
+                            method: 'POST',
+                            data: {
+                                "email": email,
+                                "username": username,
+                                "password": password
+                            }
+                        }).done(function (data) {
+                            if (data['accountCreated'] === true) { // Redirect if successful signup
+                                window.location.href = "/home";
+                            }
+                            else {                             // Give proper error if incorrect signup
+                                if (data['usernameInUse']) {
+                                    $signup_help.replaceWith(
+                                        '<p class="signup_help error">Username is taken. Choose another.</p>'
+                                    );
+                                } else if (data['emailInUse']) {
+                                    $signup_help.replaceWith(
+                                        '<p class="signup_help error">' +
+                                            'The email is in use. ' + 
+                                        '</p>'
+                                    );
+                                }
+                            }
+                        }).fail(function () {
+                            console.log('BAD POST REQUEST!');
+                        });
                     }
 
 
@@ -294,7 +321,10 @@
                    hide: "fadeOut",  
                    show : "fadeIn",  
                    height: 275,
-                   position: { my: "center", at: "center top", of: window }        
+                   position: { my: "center", at: "center top", of: window },
+                   close : function(event, ui) {
+                        $("input").val("");
+                   }      
                 }); 
 
                 // Clicking the signup button is a trigger
