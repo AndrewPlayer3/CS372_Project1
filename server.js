@@ -8,6 +8,7 @@ const path = require('path');
  *  ⛔ const {TextEncoder, TextDecoder} = require('util');
 /*/
 const { MongoClient } = require('mongodb');
+const sanitize = require('mongo-sanitize');
 
 
 /*/
@@ -186,22 +187,18 @@ server.post('/authenticate', function (request, response) {
 
     let sessionInfo = request.session;
 
-    const username = request.body.username;
-    const password = request.body.password;
+    const username = sanitize(request.body.username);
+    const password = sanitize(request.body.password);
 
     const lockOutDurationSeconds = 86400
     const lockOutDuration = lockOutDurationSeconds * 1000;
 
-    if (sessionInfo.infoSet == null) {
-        sessionInfo.infoSet = true;
-        sessionInfo.loggedin = false;
-        sessionInfo.unknownUsername = false;
-        sessionInfo.id = request.sessionID;
-    }
-
     sessionInfo.user = (username ? username : "");
     sessionInfo.lockedOut = false;
+    sessionInfo.loggedin = false;
+    sessionInfo.unknownUsername = false;
     sessionInfo.incorrectLoginAttempts = 0;
+    sessionInfo.id = request.sessionID;
 
     if (!username || !password) {
         response.sendStatus(400);
@@ -227,12 +224,12 @@ server.post('/authenticate', function (request, response) {
                 const lastIncorrectAttemptTime = userObject.lastIncorrectAttemptTime;
                 const lastIncorrectAttemptTimePassed = Date.now() - lastIncorrectAttemptTime;
 
-                if (lockOutTimePassed >= lockOutDuration) { // The user is not locked out
-                    if (lockOutTime > 0 || lastIncorrectAttemptTimePassed >= lockOutDuration) {                  // The user's lockOut has expired
+                if (lockOutTimePassed >= lockOutDuration) {  // The user is not locked out
+                    if (lockOutTime > 0 || (lastIncorrectAttemptTimePassed >= lockOutDuration && lastIncorrectAttemptTime > 0)) {  // The user's lockOut has expired
                         resetLockOut(username);
                     }
                     authenticateKnownUser(response, sessionInfo, userObject, password);
-                } else {                                    // The user is locked out.
+                } else {  // The user is locked out.
                     console.log(
                         "----------------------------------------------------------------------\n" +
                         "User " + username + ", tried to login, but they are locked out.\n" +
@@ -291,9 +288,9 @@ server.post('/create-account', function (request, response) {
 
     let sessionInfo = request.session;
 
-    const email = request.body.email;
-    const username = request.body.username;
-    const password = request.body.password;
+    const email    = sanitize(request.body.email);
+    const username = sanitize(request.body.username);
+    const password = sanitize(request.body.password);
 
     let res = {
         "emailInUse": false,
