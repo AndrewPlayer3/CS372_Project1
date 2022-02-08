@@ -70,7 +70,7 @@ const punishBadLogin = (userObject) => {
 
         console.log(
             "----------------------------------------------------------------------\n" +
-            "User " + userObject.username + ", has attempted to login incorrectly " + incorrectLoginAttempts + " times.\n" +
+            "User " + userObject.username + ", has attempted to login incorrectly " + incorrectLoginAttempts + " times.❗\n" +
             "----------------------------------------------------------------------\n"
         );
 
@@ -232,7 +232,7 @@ server.post('/authenticate', function (request, response) {
                 } else {  // The user is locked out.
                     console.log(
                         "----------------------------------------------------------------------\n" +
-                        "User " + username + ", tried to login, but they are locked out.\n" +
+                        "User " + username + ", tried to login, but they are locked out. ⛔\n" +
                         "----------------------------------------------------------------------\n"
                     );
                     sessionInfo.lockedOut = true;
@@ -256,7 +256,7 @@ server.get('/authenticate', function (request, response) {
     if (request.session.loggedin) {
         console.log(
             "----------------------------------------------------------------------\n" +
-            "Auto-Redirected: " + request.session.user + "\n" +
+            "Auto-Redirected: " + request.session.user + " ✅\n" +
             "----------------------------------------------------------------------\n"
         );
         response.send({ "loginStatus": true });
