@@ -250,7 +250,8 @@ server.post('/authenticate', function (request, response) {
  *
  *  Response Format:
  *  {
- *        "loginStatus : boolean"  -- True if the user is logged in, else false.
+ *        "loginStatus" : boolean  -- True if the user is logged in, else false.
+ *        "expires"     : Date     -- The Date/Time of when the session cookie will expire. 
  *  }
 /*/
 server.get('/authenticate', function (request, response) {
@@ -371,13 +372,36 @@ server.post('/create-account', function (request, response) {
 });
 
 
+let expirationHTMLScript = `
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script>
+        let expiresAt = 0;
+        $.ajax({
+            url: 'http://localhost:8080/authenticate',
+            method: 'get',
+            data: {}
+        }).done(function (data) {
+            expiresAt = data['expires'];
+        });
+        setInterval(function() {
+            let expiresIn = Date.parse(expiresAt) - Date.now();
+            if (expiresIn < 0) {
+                alert('Your session has expired, please login again.');
+                window.location.href = "/";
+            }
+        }, 1000);
+    </script>`
+
+
 /*/
  *  This is the user's home page: they should only get
  *  here if they are logged in.
 /*/
 server.get('/home', function (request, response) {
     if (request.session.loggedin) {
-        response.send('<h1>Hey there ' + request.session.user + ', you are now logged in. ✅</h1>');
+        response.send(expirationHTMLScript + '<h1>Hey there ' + request.session.user + ', you are now logged in. ✅</h1>');
     } else {
         response.redirect('http://localhost:8080/');
     }
