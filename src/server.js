@@ -33,6 +33,7 @@ server.use(session({
     secret: '123456',
     resave: true,
     saveUninitialized: true,
+    cookie: {maxAge: 60000}
 }));
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
@@ -259,9 +260,9 @@ server.get('/authenticate', function (request, response) {
             "Auto-Redirected: " + request.session.user + " ✅\n" +
             "----------------------------------------------------------------------\n"
         );
-        response.send({ "loginStatus": true });
+        response.send({ "expires": request.session.cookie.expires, "loginStatus": true });
     } else {
-        response.send({ "loginStatus": false });
+        response.send({ "expires": request.session.cookie.expires, "loginStatus": false });
     }
 });
 
