@@ -105,3 +105,6 @@ dist
 
 # Default ignored files
 .idea/*
+
+# Eslint Config
+src/.eslintrc.json
