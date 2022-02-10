@@ -58,6 +58,12 @@ server.get('/auth_guard.js', (_, response) => {
     response.sendFile(path.join(__dirname + '/auth_guard.js'));
 });
 
+/*/
+ *  Send the html for password reset.
+/*/
+server.get('/reset', (_, response) => {
+    response.sendFile(path.join(__dirname + '/reset.html'));
+});
 
 /*/
  *  Increment a user's incorrectLoginAttempts and lock them out if those attempts are greater than 2
