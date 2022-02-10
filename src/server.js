@@ -1,3 +1,7 @@
+/*/ 
+ * Express server for a basic login application.
+/*/
+
 const express = require('express');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
@@ -23,17 +27,17 @@ client.connect().then(
     r => console.log("Connected to mongodb at " + url + " with response " + r + "\n")
 );
 
-const server = express();
-
 
 /*/
  *  The user's session (cookie).
 /*/
+const server = express();
+const LOGINTIMEOUTSECONDS = 60;
 server.use(session({
     secret: '123456',
     resave: true,
     saveUninitialized: true,
-    cookie: {maxAge: 60000}
+    cookie: {maxAge: LOGINTIMEOUTSECONDS * 1000}
 }));
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
@@ -42,8 +46,16 @@ server.use(express.json());
 /*/
  *  Load the initial login page that has the form.
 /*/
-server.get('/', function (request, response) {
+server.get('/', (_, response) => {
     response.sendFile(path.join(__dirname + '/login.html'));
+});
+
+
+/*/
+ *  Send the script for checking if the user is authenticated and/or if they have timed-out.
+/*/
+server.get('/auth_guard.js', (_, response) => {
+    response.sendFile(path.join(__dirname + '/auth_guard.js'));
 });
 
 
@@ -65,7 +77,7 @@ const punishBadLogin = (userObject) => {
     } // Should further incorrect logins make update the lockOut time?
 
     // Increment the incorrectLoginAttempts field in the database.
-    client.db(dbName).collection(dbCollection).updateOne(queryFilter, updateFilter, function (err_insert, result) {
+    client.db(dbName).collection(dbCollection).updateOne(queryFilter, updateFilter, (err_insert, result) => {
 
         if (err_insert) throw err_insert;
 
@@ -89,7 +101,7 @@ const resetLockOut = (username) => {
     const updateFilter = { "$set": { "lockOutTime": 0, "incorrectLoginAttempts": 0, "lastIncorrectAttemptTime": 0 } };
 
     // Increment the incorrectLoginAttempts field in the database.
-    client.db(dbName).collection(dbCollection).updateOne(queryFilter, updateFilter, function (err_insert, result) {
+    client.db(dbName).collection(dbCollection).updateOne(queryFilter, updateFilter, (err_insert, result) => {
 
         if (err_insert) throw err_insert
 
@@ -146,7 +158,7 @@ const authenticateKnownUser = (response, sessionInfo, userObject, password) => {
     const dbPassword = userObject.password;
 
     // Hash check the inputted password against the one in the database.
-    bcrypt.compare(password, dbPassword, function (err_hash, successful_login) {
+    bcrypt.compare(password, dbPassword, (err_hash, successful_login) => {
 
         if (err_hash) throw err_hash;
 
@@ -184,7 +196,7 @@ const authenticateKnownUser = (response, sessionInfo, userObject, password) => {
  *      "lockedOut"         : boolean   -- whether the user's session is locked or not
  *  }
 /*/
-server.post('/authenticate', function (request, response) {
+server.post('/authenticate', (request, response) => {
 
     let sessionInfo = request.session;
 
@@ -254,7 +266,7 @@ server.post('/authenticate', function (request, response) {
  *        "expires"     : Date     -- The Date/Time of when the session cookie will expire. 
  *  }
 /*/
-server.get('/authenticate', function (request, response) {
+server.get('/authenticate', (request, response) => {
     if (request.session.loggedin) {
         console.log(
             "----------------------------------------------------------------------\n" +
@@ -286,7 +298,7 @@ server.get('/authenticate', function (request, response) {
  *      "createdAccount" : boolean  -- whether the account was created successfully
  *  }
 /*/
-server.post('/create-account', function (request, response) {
+server.post('/create-account', (request, response) => {
 
     let sessionInfo = request.session;
 
@@ -308,16 +320,16 @@ server.post('/create-account', function (request, response) {
         const saltRounds = 10;
 
         // Generate a salt and then hash the password with bcrypt
-        bcrypt.genSalt(saltRounds, function (err_salt, salt) {
+        bcrypt.genSalt(saltRounds, (err_salt, salt) => {
 
             if (err_salt) throw err_salt;
 
-            bcrypt.hash(password, salt, function (err_hash, hash) {
+            bcrypt.hash(password, salt, (err_hash, hash) => {
 
                 if (err_hash) throw err_hash;
 
                 // Check if email already exists
-                client.db(dbName).collection(dbCollection).find({ 'email': email }).toArray(function (err_findEmail, result) {
+                client.db(dbName).collection(dbCollection).find({ 'email': email }).toArray( (err_findEmail, result) => {
 
                     if (err_findEmail) throw err_findEmail;
 
@@ -327,7 +339,7 @@ server.post('/create-account', function (request, response) {
                     } else {
 
                         // Check if username already exists
-                        client.db(dbName).collection(dbCollection).find({ 'username': username }).toArray(function (err_findUser, result) {
+                        client.db(dbName).collection(dbCollection).find({ 'username': username }).toArray( (err_findUser, result) => {
 
                             if (err_findUser) throw err_findUser;
 
@@ -346,7 +358,7 @@ server.post('/create-account', function (request, response) {
                                 }
 
                                 // Insert the new user into the database
-                                client.db(dbName).collection(dbCollection).insertOne(user, function (err_insert, result) {
+                                client.db(dbName).collection(dbCollection).insertOne(user, (err_insert, result) => {
 
                                     if (err_insert) throw err_insert;
 
@@ -372,36 +384,35 @@ server.post('/create-account', function (request, response) {
 });
 
 
-let expirationHTMLScript = `
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-    <script>
-        let expiresAt = 0;
-        $.ajax({
-            url: 'http://localhost:8080/authenticate',
-            method: 'get',
-            data: {}
-        }).done(function (data) {
-            expiresAt = data['expires'];
-        });
-        setInterval(function() {
-            let expiresIn = Date.parse(expiresAt) - Date.now();
-            if (expiresIn < 0) {
-                alert('Your session has expired, please login again.');
-                window.location.href = "/";
-            }
-        }, 1000);
-    </script>`
+/*/
+ * Force a logout by destroying the user's session cookie.
+/*/
+server.post('/logout', (request, response) => {
+    
+    const id = request.sessionID;
+    
+    request.session.destroy();
+    response.sendStatus(200);
+
+    console.log(
+        "----------------------------------------------------------------------\n" +
+        "Session: " + id + " has timed-out and has been destroyed.\n" +
+        "----------------------------------------------------------------------\n"
+    );
+});
 
 
 /*/
  *  This is the user's home page: they should only get
  *  here if they are logged in.
 /*/
-server.get('/home', function (request, response) {
+server.get('/home', (request, response) => {
     if (request.session.loggedin) {
-        response.send(expirationHTMLScript + '<h1>Hey there ' + request.session.user + ', you are now logged in. ✅</h1>');
+        response.send(
+            '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>' +
+            '<script src="/auth_guard.js"></script>' + 
+            '<h1>Hey there ' + request.session.user + ', you are now logged in. ✅</h1>'
+        );
     } else {
         response.redirect('http://localhost:8080/');
     }

@@ -12,21 +12,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 
     <!-- jQuery script used to auto-redirect authenticated sessions -->
-    <script>
-        let expiresAt = 0;
-        $.ajax({
-            url: 'http://localhost:8080/authenticate',
-            method: 'get',
-            data: {}
-        }).done(function (data) {
-            if (data['loginStatus'] === true) window.location.href = "/home";
-            expiresAt = data['expires'];
-        });
-        setInterval(function() {
-            let expiresIn = Date.parse(expiresAt) - Date.now();
-            if (expiresIn < 0) window.location.href = "/"
-        }, 1000);
-    </script>
+    <script src="/auth_guard.js"></script>
 
     <!-- Styles -->
     <style>
@@ -362,4 +348,4 @@
     </div>
 </body>
 
-</html>
+</html
