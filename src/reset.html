@@ -3,43 +3,109 @@
 <html lang="en">
 
 <head>
-
     <title>Forgot Password</title>
+    <style>
+    	* {
+		    font-family: monospace;
+		}
 
+    	h1 {
+		    display: block;
+		    font-size: 2em;
+		    margin-block-start: 0.67em;
+		    margin-block-end: 0.67em;
+		    margin-inline-start: 0px;
+		    margin-inline-end: 0px;
+		    font-weight: bold;
+		}
+    	.reset {
+    		text-align: center;
+
+    	}
+    	.reset_form {
+    		margin-top: 40px
+    	}
+    	.buttons_form{
+    		display: flex;
+    		justify-content: center;
+    	}
+
+    	.btn{
+    		margin:  1em;
+    	}
+
+    	.i_reset_check_trigger{
+    		width: 30%;
+    	}
+    </style>
 </head>
 <body>
-	<!-- Main login page div -->
+	<!-- Main reset page div -->
     <div class="reset">
 
         <!-- Heading -->
         <div class="reset_heading">
-            <h1></h1>
+            <h1>Reset Password:</h1>
             <hr>
         </div>
 
         <!-- Login div rather than form for jQuery -->
-        <div class="reset_form" style="margin-top: 40px;">
+        <div class="reset_form">
 
-            <div>
-                <label for="label">Reset Password </label>
-            </div>
             <input id="usr" name="username" type="username" placeholder="Enter Username or Email"
                     class="i_reset_check_trigger" required>
 
             <div class="buttons_form">
                 <!-- Cancel Button -->
                 <div class="cancel_form_part btn">
-                    <a class="b_cancel_check_trigger" href="/">Cancel</a>
+                	<button class="b_cancel_check_trigger" type="submit" href="/">Cancel</button>
                 </div>
 
                 <!-- Reset Button -->
                 <div class="reset_form_part btn">
-                    <a class="b_resetpwd_check_trigger" href="#">Reset</a>
+                	<button class="b_resetpwd_check_trigger" type="submit" href="#">Reset</button>
                 </div>
             </div>
 
-        </div>
+            <!-- Reset call-to-action and warnings. -->
+            <div class="reset_form_part reset_help_div">
+                <p class="reset_help">Please enter your username or email.</p>
+            </div>
 
+            <script name="reset-check">
+            	function changeDom(){
+            		const $reset_help_element = jQuery('p.reset_help');
+
+            		const username = document.getElementById("usr").value;
+
+            		if (!username) {
+                        $reset_help_element.replaceWith(
+                            '<p class="reset_help_no_input error">' +
+                                'You need to enter an username or email.' +
+                            '</p>'
+                        );
+                    } else {
+                    	$.ajax({
+                            url: 'http://localhost:8080/reset.html',
+                            method: 'POST',
+                            data: {
+                                "username": username
+                            }
+                        }).done(function (data) {
+
+                        }).fail(function () {
+                            console.log('BAD POST REQUEST!');
+                        });
+                    }
+
+            	}
+
+				// Clicking the login button is a trigger
+                $('.b_resetpwd_check_trigger').click(function () {
+                    changeDom();
+                });
+            </script>
+        </div>
     </div>    
 </body>
 </html>
