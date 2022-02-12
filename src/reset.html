@@ -69,7 +69,7 @@
 
             <!-- Reset call-to-action and warnings. -->
             <div class="reset_form_part reset_help_div">
-                <p class="reset_help">Please enter your username or email.</p>
+                <p class="reset_help">Please enter your username.</p>
             </div>
 
             <script name="reset-check">
@@ -81,18 +81,24 @@
             		if (!username) {
                         $reset_help_element.replaceWith(
                             '<p class="reset_help_no_input error">' +
-                                'You need to enter an username or email.' +
+                                'You need to enter an username.' +
                             '</p>'
                         );
                     } else {
                     	$.ajax({
-                            url: 'http://localhost:8080/reset.html',
+                            url: 'http://localhost:8080/reset',
                             method: 'POST',
                             data: {
                                 "username": username
                             }
                         }).done(function (data) {
-
+							if (!data['usernameExists']) {
+                                $signup_help.replaceWith(
+                                    '<p class="reset_help error">Username does not exist.</p>'
+                                );
+                            } else {
+                            	
+                            }
                         }).fail(function () {
                             console.log('BAD POST REQUEST!');
                         });
