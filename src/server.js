@@ -208,6 +208,7 @@ server.post('/authenticate', (request, response) => {
 
     let sessionInfo = request.session;
 
+    // Mongo Sanitize  -- Removes keys with $ and .
     const username = sanitize(request.body.username);
     const password = sanitize(request.body.password);
 
@@ -310,9 +311,13 @@ server.post('/create-account', (request, response) => {
 
     let sessionInfo = request.session;
 
+    // Mongo Sanitize  -- Removes keys with $ and .
     const email    = sanitize(request.body.email);
     const username = sanitize(request.body.username);
     const password = sanitize(request.body.password);
+
+    // Email Regex, same as used by the HTML5 email type input.
+    const email_regex = "/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/";
 
     let res = {
         "emailInUse": false,
@@ -322,6 +327,8 @@ server.post('/create-account', (request, response) => {
 
     // Send status code 400 [Bad Request] if not all information was provided
     if (!email || !username || !password) {
+        response.sendStatus(400);
+    } else if(!email.match(email_regex)) {
         response.sendStatus(400);
     } else {
 
