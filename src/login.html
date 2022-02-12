@@ -237,7 +237,16 @@
                     const password = document.getElementById("sPwd").value
                     const repassword = document.getElementById("sRePwd").value
 
-                    if (!email){
+                    // Email Regex, same as used by the HTML5 email type input.
+                    const email_regex = "/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/";
+
+                    if(!email.match(email_regex)) {
+                        $signup_help.replaceWith(
+                            '<p class="signup_help error">' +
+                                'Enter a valid email.' +
+                            '</p>'
+                        );
+                    } else if (!email){
                         $signup_help.replaceWith(
                             '<p class="signup_help error">' +
                                 'Enter Email.' +
