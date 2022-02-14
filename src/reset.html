@@ -52,7 +52,7 @@
         <!-- Login div rather than form for jQuery -->
         <div class="reset_form">
 
-            <input id="usr" name="username" type="username" placeholder="Enter Username or Email"
+            <input id="usr" name="username" type="text" placeholder="Enter Username or Email"
                     class="i_reset_check_trigger" required>
 
             <div class="buttons_form">
@@ -81,24 +81,21 @@
             		if (!username) {
                         $reset_help_element.replaceWith(
                             '<p class="reset_help_no_input error">' +
-                                'You need to enter an username.' +
+                                'You need to enter a username.' +
                             '</p>'
                         );
                     } else {
-                    	$.ajax({
+                        $.ajax({
                             url: 'http://localhost:8080/reset',
                             method: 'POST',
                             data: {
                                 "username": username
                             }
                         }).done(function (data) {
-							if (!data['usernameExists']) {
-                                $signup_help.replaceWith(
-                                    '<p class="reset_help error">Username does not exist.</p>'
-                                );
-                            } else {
-                            	
-                            }
+                            // This does not do anything, but it would make a
+                            // request to send the user an email with a password
+                            // reset link if we had the ability to do so.
+                            console.log("Resetting Password for " + username);
                         }).fail(function () {
                             console.log('BAD POST REQUEST!');
                         });

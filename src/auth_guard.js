@@ -8,6 +8,7 @@ let expiresAt = 0;
 let expired = false;
 let lastActive = Date.now();
 
+
 // Get whether the session is logged in, and when it expires.
 $.ajax({
     url: 'http://localhost:8080/authenticate',
@@ -51,7 +52,7 @@ const timeoutSession = () => {
         url: 'http://localhost:8080/logout',
         method: 'post',
         data: {}
-    }).done(function(data) {
+    }).done(function(_) {
         expired = true;
         alert('💤 This session has expired. 💤\nPlease login again. ');
         window.location.href = "/";
@@ -64,6 +65,7 @@ const touchActivity = () => {
 }
 
 
+// If the user moves their mouse, scrolls, presses a key, or resizes the window, they are not inactive.
 const userActivityTrackers = () => {
   window.addEventListener("mousemove", touchActivity);
   window.addEventListener("scroll", touchActivity);

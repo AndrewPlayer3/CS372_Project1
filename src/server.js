@@ -173,8 +173,6 @@ const authenticateKnownUser = (response, sessionInfo, userObject, password) => {
         if (successful_login) {
             sessionInfo.user = dbUsername;
             sessionInfo.loggedin = true;
-            // Should successfully logging in reset the incorrect login attempts?
-            // resetLockOut(dbUsername);
         } else {
             sessionInfo.incorrectLoginAttempts++;
             if (sessionInfo.incorrectLoginAttempts === 3) {
@@ -317,7 +315,7 @@ server.post('/create-account', (request, response) => {
     const password = sanitize(request.body.password);
 
     // Email Regex, same as used by the HTML5 email type input.
-    const email_regex = "/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/";
+    const email_regex = "^[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$";
 
     let res = {
         "emailInUse": false,
@@ -326,9 +324,7 @@ server.post('/create-account', (request, response) => {
     };
 
     // Send status code 400 [Bad Request] if not all information was provided
-    if (!email || !username || !password) {
-        response.sendStatus(400);
-    } else if(!email.match(email_regex)) {
+    if (!email || !username || !password || !email.match(email_regex)) {
         response.sendStatus(400);
     } else {
 
